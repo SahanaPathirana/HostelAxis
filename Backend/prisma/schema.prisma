@@ -1,0 +1,128 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  Student
+  Admin
+}
+
+enum VerificationStatus {
+  Pending
+  Verified
+  Rejected
+}
+
+enum RoomType {
+  Single
+  Double
+  Triple
+  Quad
+}
+
+enum FeePeriod {
+  Monthly
+  Semester
+  Annual
+}
+
+enum ComplaintStatus {
+  Open
+  InProgress
+  Resolved
+  Closed
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  fullName  String   @map("full_name")
+  phone     String?
+  role      Role     @default(Student)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  student   Student?
+}
+
+model Student {
+  id                 String             @id @default(cuid())
+  userId             String             @unique @map("user_id")
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  universityId       String             @unique @map("university_id")
+  universityName     String             @map("university_name")
+  verificationStatus VerificationStatus @default(Pending) @map("verification_status")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+  bed                Bed?
+  payments           Payment[]
+  complaints         Complaint[]
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  roomNumber  String   @unique @map("room_number")
+  type        RoomType @default(Single)
+  capacity    Int      @default(1)
+  floor       Int?
+  hostelBlock String?  @map("hostel_block")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  beds        Bed[]
+}
+
+model Bed {
+  id         String    @id @default(cuid())
+  bedNumber  String    @map("bed_number")
+  roomId     String    @map("room_id")
+  room       Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  studentId  String?   @unique @map("student_id")
+  student    Student?  @relation(fields: [studentId], references: [id])
+  assignedAt DateTime? @map("assigned_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@unique([roomId, bedNumber])
+}
+
+model FeePlan {
+  id          String    @id @default(cuid())
+  name        String
+  amount      Float
+  period      FeePeriod @default(Monthly)
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  payments    Payment[]
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  studentId String   @map("student_id")
+  student   Student  @relation(fields: [studentId], references: [id])
+  feePlanId String   @map("fee_plan_id")
+  feePlan   FeePlan  @relation(fields: [feePlanId], references: [id])
+  amount    Float
+  paidAt    DateTime @default(now()) @map("paid_at")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+}
+
+model Complaint {
+  id          String          @id @default(cuid())
+  studentId   String          @map("student_id")
+  student     Student         @relation(fields: [studentId], references: [id])
+  title       String
+  description String
+  status      ComplaintStatus @default(Open)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+}
