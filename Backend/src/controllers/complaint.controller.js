@@ -44,4 +44,47 @@ async function updateComplaintStatus(req, res) {
   }
 }
 
-module.exports = { submitComplaint, getMyComplaints, getAllComplaints, updateComplaintStatus };
+async function assignComplaint(req, res) {
+  try {
+    const { id } = req.params;
+    const { staffId } = req.body;
+    const result = await complaintService.assignComplaintToStaff(id, staffId);
+    if (!result.success) return res.status(400).json({ error: result.error });
+    res.json({ message: "Complaint assigned", complaint: result.complaint, whatsappUrl: result.whatsappUrl });
+  } catch (err) {
+    console.error("assignComplaint error:", err.message);
+    res.status(500).json({ error: "Failed to assign complaint" });
+  }
+}
+
+
+async function getStaffComplaints(req, res) {
+  try {
+    const complaints = await complaintService.listAssignedComplaintsForStaff(req.user.id);
+    res.json({ complaints });
+  } catch (err) {
+    console.error("getStaffComplaints error:", err.message);
+    res.status(500).json({ error: "Failed to fetch staff complaints" });
+  }
+}
+
+async function markComplaintDoneByStaff(req, res) {
+  try {
+    const result = await complaintService.markDoneByStaff(req.user.id, req.params.id);
+    if (!result.success) return res.status(400).json({ error: result.error });
+    res.json({ message: "Marked done", complaint: result.complaint });
+  } catch (err) {
+    console.error("markComplaintDoneByStaff error:", err.message);
+    res.status(500).json({ error: "Failed to update complaint" });
+  }
+}
+
+module.exports = {
+  submitComplaint,
+  getMyComplaints,
+  getAllComplaints,
+  updateComplaintStatus,
+  assignComplaint,
+  getStaffComplaints,
+  markComplaintDoneByStaff,
+};

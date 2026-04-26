@@ -10,6 +10,16 @@ async function getPayments(req, res) {
   }
 }
 
+async function getPaymentRequests(req, res) {
+  try {
+    const requests = await paymentService.listPaymentRequests();
+    res.json({ requests });
+  } catch (err) {
+    console.error("getPaymentRequests error:", err.message);
+    res.status(500).json({ error: "Failed to fetch payment requests" });
+  }
+}
+
 async function recordPayment(req, res) {
   try {
     const result = await paymentService.recordPayment(req.body);
@@ -21,4 +31,15 @@ async function recordPayment(req, res) {
   }
 }
 
-module.exports = { getPayments, recordPayment };
+async function submitPaymentRequest(req, res) {
+  try {
+    const result = await paymentService.submitPaymentRequest(req.user.id, req.body);
+    if (!result.success) return res.status(400).json({ error: result.error });
+    res.status(201).json({ message: "Payment request submitted", request: result.request });
+  } catch (err) {
+    console.error("submitPaymentRequest error:", err.message);
+    res.status(500).json({ error: "Failed to submit payment request" });
+  }
+}
+
+module.exports = { getPayments, recordPayment, submitPaymentRequest, getPaymentRequests };

@@ -2,13 +2,21 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Box, Typography, Paper, TextField, Button, Chip, Divider,
   CircularProgress, Alert, Table, TableBody, TableCell,
-  TableContainer, TableHead, TableRow,
+  TableContainer, TableHead, TableRow, MenuItem,
 } from "@mui/material";
 import { ReportProblem, Send, Refresh } from "@mui/icons-material";
 import { studentAPI } from "../../services/api";
 
+const COMPLAINT_TYPES = ["Cleaning", "Maintenance", "Electricity", "Water Supply", "Repair"];
+
 const statusColor = {
-  Open: "error", InProgress: "warning", Resolved: "success", Closed: "default",
+  Open: "error", InProgress: "warning", StaffNotified: "info",
+  DoneByStaff: "secondary", Resolved: "success", Closed: "default",
+};
+
+const statusLabel = {
+  Open: "Open", InProgress: "In Progress", StaffNotified: "Staff Notified",
+  DoneByStaff: "Done by Staff", Resolved: "Done", Closed: "Closed",
 };
 
 export default function ComplaintsPage() {
@@ -36,7 +44,7 @@ export default function ComplaintsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.description.trim()) {
-      setError("Title and description are required");
+      setError("Type and description are required");
       return;
     }
     setSubmitting(true);
@@ -86,15 +94,20 @@ export default function ComplaintsPage() {
 
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <Typography variant="caption" fontWeight={600} color="#374151" mb={0.5} display="block">
-            Subject / Title
+            Title (Type) *
           </Typography>
           <TextField
             fullWidth
-            placeholder="e.g. Water leakage in bathroom"
+            select
+            placeholder="Select complaint type"
             value={form.title}
             onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
             sx={{ mb: 2.5 }}
-          />
+          >
+            <MenuItem value="">— Select type —</MenuItem>
+            {COMPLAINT_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
+          </TextField>
+
           <Typography variant="caption" fontWeight={600} color="#374151" mb={0.5} display="block">
             Description
           </Typography>
@@ -139,7 +152,7 @@ export default function ComplaintsPage() {
           <Table size="small">
             <TableHead sx={{ bgcolor: "#f8fafc" }}>
               <TableRow>
-                {["Title", "Description", "Status", "Submitted On"].map((h) => (
+                {["Title (Type)", "Description", "Status", "Submitted On"].map((h) => (
                   <TableCell key={h} sx={{ fontWeight: 700 }}>{h}</TableCell>
                 ))}
               </TableRow>
@@ -159,14 +172,19 @@ export default function ComplaintsPage() {
                 </TableRow>
               ) : complaints.map((c) => (
                 <TableRow key={c.id} hover>
-                  <TableCell sx={{ fontWeight: 600, maxWidth: 200 }}>{c.title}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, maxWidth: 160 }}>{c.title}</TableCell>
                   <TableCell sx={{ color: "text.secondary", maxWidth: 300 }}>
                     <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                       {c.description}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Chip label={c.status} color={statusColor[c.status]} size="small" sx={{ fontWeight: 600 }} />
+                    <Chip
+                      label={statusLabel[c.status] || c.status}
+                      color={statusColor[c.status] || "default"}
+                      size="small"
+                      sx={{ fontWeight: 600 }}
+                    />
                   </TableCell>
                   <TableCell sx={{ color: "text.secondary", whiteSpace: "nowrap" }}>
                     {new Date(c.createdAt).toLocaleDateString()}
